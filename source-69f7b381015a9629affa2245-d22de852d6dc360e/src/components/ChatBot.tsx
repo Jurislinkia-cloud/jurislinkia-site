@@ -15,7 +15,7 @@ const HEADER_BG = '#FFFFFF'
 const HEADER_BORDER = '#E5E7EB'
 const ERROR = '#BC1E1E'
 
-// 🔥 Nom du formulaire Netlify (doit matcher index.html)
+// Nom du formulaire Netlify (doit matcher index.html)
 const NETLIFY_FORM_NAME = 'inscription-avocat'
 
 interface Message {
@@ -83,23 +83,23 @@ function extractDisplayText(raw: string): string {
   return raw
 }
 
-// 🔥 Helper : envoie les données du formulaire à Netlify Forms.
-// On encapsule dans une fonction séparée pour que toute erreur Netlify
-// ne casse JAMAIS le flow principal vers /api/chat.
+// Envoi à Netlify Forms.
+// URL = '/' (PAS '/?form=1' qui ne fonctionne pas).
+// Méthode officielle Netlify : POST x-www-form-urlencoded à la racine.
 async function submitToNetlify(form: FormData): Promise<void> {
   try {
     const formData = new URLSearchParams()
     formData.append('form-name', NETLIFY_FORM_NAME)
-    formData.append('firstName', form.firstName || '')
-    formData.append('lastName', form.lastName || '')
-    formData.append('email', form.email || '')
-    formData.append('phone', form.phone || '')
-    formData.append('province', form.province || '')
-    formData.append('city', form.city || '')
-    formData.append('facts', form.facts || '')
+    formData.append('firstName', form.firstName)
+    formData.append('lastName', form.lastName)
+    formData.append('email', form.email)
+    formData.append('phone', form.phone)
+    formData.append('province', form.province)
+    formData.append('city', form.city)
+    formData.append('facts', form.facts)
     formData.append('submittedAt', new Date().toISOString())
 
-    await fetch('/?form=1', {   // 🔥 IMPORTANT
+    const response = await fetch('/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -107,6 +107,11 @@ async function submitToNetlify(form: FormData): Promise<void> {
       body: formData.toString(),
     })
 
+    if (!response.ok) {
+      console.warn('[Netlify Forms] non-OK status:', response.status)
+    } else {
+      console.log('[Netlify Forms] submission sent successfully')
+    }
   } catch (err) {
     console.warn('[Netlify Forms] submission failed:', err)
   }
@@ -127,21 +132,16 @@ export function ChatBot({ locale, compact = false }: Props) {
   const [result, setResult] = useState<ChatResult | null>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
 
-  // Scroll only inside the messages container — never scroll the page.
   useEffect(() => {
     const c = messagesContainerRef.current
     if (c) c.scrollTop = c.scrollHeight
   }, [messages, loading])
 
-  // Prevent the browser from scrolling the page when the chat input
-  // (or any field inside the chatbot) gains focus.
   const preventPageScrollOnFocus = (e: React.FocusEvent<HTMLElement>) => {
     const x = window.scrollX
     const y = window.scrollY
-    // Run after the browser's default focus scroll-into-view.
     requestAnimationFrame(() => window.scrollTo(x, y))
     setTimeout(() => window.scrollTo(x, y), 0)
-    // Avoid an unused-var warning.
     void e
   }
 
@@ -169,12 +169,14 @@ export function ChatBot({ locale, compact = false }: Props) {
 
   const handleFormSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault()
-    // 🔥 ENVOI À NETLIFY TOUJOURS (même incomplet)
-    void submitToNetlify(form)
-    
-    // 👉 ensuite validation (UX seulement)
+
+    // 1. Validation FIRST
     if (!validateForm()) return
 
+    // 2. Envoi à Netlify (en parallèle)
+    void submitToNetlify(form)
+
+    // 3. Continue vers le chat AI
     setStage('chat')
     setMessages([
       { role: 'user', content: form.facts },
@@ -254,7 +256,6 @@ export function ChatBot({ locale, compact = false }: Props) {
 
   const formPadClass = compact ? 'p-6 md:p-8 space-y-4' : 'p-8 space-y-5'
 
-  // ───── FORM STAGE ─────
   if (stage === 'form') {
     if (compact) {
       return (
@@ -264,21 +265,7 @@ export function ChatBot({ locale, compact = false }: Props) {
             className={formPadClass}
             autoComplete="off"
             onFocusCapture={preventPageScrollOnFocus}
-            // 🔥 Attributs Netlify Forms
-            name={NETLIFY_FORM_NAME}
-            method="POST"
-            data-netlify="true"
-            data-netlify-honeypot="bot-field"
           >
-            {/* 🔥 Champs requis par Netlify (cachés) */}
-            <input type="hidden" name="form-name" value={NETLIFY_FORM_NAME} />
-            <p className="hidden">
-              <label>
-                Don't fill this out: <input name="bot-field" />
-              </label>
-            </p>
-
-            {/* Welcome bubble — JL avatar + light grey bubble */}
             <div className="flex gap-3 items-start">
               <div
                 className="shrink-0 rounded-full flex items-center justify-center"
@@ -308,14 +295,12 @@ export function ChatBot({ locale, compact = false }: Props) {
               </div>
             </div>
 
-            {/* Large textarea — facts first */}
             <div>
               <label htmlFor="chat-facts" className="sr-only">
                 {tx(t.chat.fields.facts, locale)}
               </label>
               <textarea
                 id="chat-facts"
-                name="facts"
                 rows={4}
                 value={form.facts}
                 onChange={e => update('facts', e.target.value)}
@@ -336,10 +321,8 @@ export function ChatBot({ locale, compact = false }: Props) {
               {errors.facts && <p className="text-xs mt-1" style={{ color: ERROR }}>{errors.facts}</p>}
             </div>
 
-            {/* 6 fields, 2 columns */}
             <div className="grid sm:grid-cols-2 gap-3">
               <Field
-                name="firstName"
                 label={tx(t.chat.fields.firstName, locale)}
                 value={form.firstName}
                 onChange={v => update('firstName', v)}
@@ -347,7 +330,6 @@ export function ChatBot({ locale, compact = false }: Props) {
                 error={errors.firstName}
               />
               <Field
-                name="lastName"
                 label={tx(t.chat.fields.lastName, locale)}
                 value={form.lastName}
                 onChange={v => update('lastName', v)}
@@ -355,7 +337,6 @@ export function ChatBot({ locale, compact = false }: Props) {
                 error={errors.lastName}
               />
               <Field
-                name="email"
                 label={tx(t.chat.fields.email, locale)}
                 type="email"
                 value={form.email}
@@ -364,7 +345,6 @@ export function ChatBot({ locale, compact = false }: Props) {
                 error={errors.email}
               />
               <Field
-                name="phone"
                 label={tx(t.chat.fields.phone, locale)}
                 type="tel"
                 value={form.phone}
@@ -375,7 +355,6 @@ export function ChatBot({ locale, compact = false }: Props) {
               <div>
                 <label className="block text-sm font-medium mb-1.5" style={{ color: LABEL }}>{tx(t.chat.fields.province, locale)}</label>
                 <select
-                  name="province"
                   value={form.province}
                   onChange={e => update('province', e.target.value)}
                   className={FIELD_INPUT_CLASSES}
@@ -392,7 +371,6 @@ export function ChatBot({ locale, compact = false }: Props) {
                 {errors.province && <p className="text-xs mt-1" style={{ color: ERROR }}>{errors.province}</p>}
               </div>
               <Field
-                name="city"
                 label={tx(t.chat.fields.city, locale)}
                 value={form.city}
                 onChange={v => update('city', v)}
@@ -400,7 +378,6 @@ export function ChatBot({ locale, compact = false }: Props) {
               />
             </div>
 
-            {/* CTA — full width black, hover red */}
             <button
               type="submit"
               className="w-full inline-flex items-center justify-center gap-2 transition-colors"
@@ -420,7 +397,6 @@ export function ChatBot({ locale, compact = false }: Props) {
               {tx(t.chat.submit, locale)} <ArrowRight size={16} />
             </button>
 
-            {/* Trust signals */}
             <div
               className="flex flex-wrap items-center justify-center gap-2 pt-1"
               style={{
@@ -446,20 +422,7 @@ export function ChatBot({ locale, compact = false }: Props) {
           className={formPadClass}
           autoComplete="off"
           onFocusCapture={preventPageScrollOnFocus}
-          // 🔥 Attributs Netlify Forms
-          name={NETLIFY_FORM_NAME}
-          method="POST"
-          data-netlify="true"
-          data-netlify-honeypot="bot-field"
         >
-          {/* 🔥 Champs requis par Netlify (cachés) */}
-          <input type="hidden" name="form-name" value={NETLIFY_FORM_NAME} />
-          <p className="hidden">
-            <label>
-              Don't fill this out: <input name="bot-field" />
-            </label>
-          </p>
-
           <div className="flex gap-3 items-start">
             <AlertCircle size={20} style={{ color: ACCENT }} className="shrink-0 mt-0.5" />
             <p className="text-sm leading-relaxed" style={{ color: CARD_BODY }}>{tx(t.chat.intro, locale)}</p>
@@ -467,7 +430,6 @@ export function ChatBot({ locale, compact = false }: Props) {
 
           <div className="grid sm:grid-cols-2 gap-4">
             <Field
-              name="firstName"
               label={tx(t.chat.fields.firstName, locale)}
               value={form.firstName}
               onChange={v => update('firstName', v)}
@@ -475,7 +437,6 @@ export function ChatBot({ locale, compact = false }: Props) {
               error={errors.firstName}
             />
             <Field
-              name="lastName"
               label={tx(t.chat.fields.lastName, locale)}
               value={form.lastName}
               onChange={v => update('lastName', v)}
@@ -486,7 +447,6 @@ export function ChatBot({ locale, compact = false }: Props) {
 
           <div className="grid sm:grid-cols-2 gap-4">
             <Field
-              name="email"
               label={tx(t.chat.fields.email, locale)}
               type="email"
               value={form.email}
@@ -495,7 +455,6 @@ export function ChatBot({ locale, compact = false }: Props) {
               error={errors.email}
             />
             <Field
-              name="phone"
               label={tx(t.chat.fields.phone, locale)}
               type="tel"
               value={form.phone}
@@ -509,7 +468,6 @@ export function ChatBot({ locale, compact = false }: Props) {
             <div>
               <label className="block text-sm font-medium mb-1.5" style={{ color: LABEL }}>{tx(t.chat.fields.province, locale)}</label>
               <select
-                name="province"
                 value={form.province}
                 onChange={e => update('province', e.target.value)}
                 className={FIELD_INPUT_CLASSES}
@@ -526,7 +484,6 @@ export function ChatBot({ locale, compact = false }: Props) {
               {errors.province && <p className="text-xs mt-1" style={{ color: ERROR }}>{errors.province}</p>}
             </div>
             <Field
-              name="city"
               label={tx(t.chat.fields.city, locale)}
               value={form.city}
               onChange={v => update('city', v)}
@@ -537,7 +494,6 @@ export function ChatBot({ locale, compact = false }: Props) {
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: LABEL }}>{tx(t.chat.fields.facts, locale)}</label>
             <textarea
-              name="facts"
               rows={5}
               value={form.facts}
               onChange={e => update('facts', e.target.value)}
@@ -560,7 +516,6 @@ export function ChatBot({ locale, compact = false }: Props) {
     )
   }
 
-  // ───── DONE STAGE ─────
   if (stage === 'done' && result) {
     return (
       <div className={wrapperClass} style={containerStyle}>
@@ -628,7 +583,6 @@ export function ChatBot({ locale, compact = false }: Props) {
     )
   }
 
-  // ───── CHAT STAGE ─────
   return (
     <div className={wrapperClass} style={containerStyle}>
       <ChatHeader locale={locale} onReset={handleReset} showReset={true} />
@@ -765,9 +719,8 @@ function ChatHeader({ locale, onReset, showReset }: { locale: Locale; onReset: (
 }
 
 function Field({
-  name, label, value, onChange, type = 'text', placeholder, error,
+  label, value, onChange, type = 'text', placeholder, error,
 }: {
-  name?: string
   label: string
   value: string
   onChange: (v: string) => void
@@ -779,7 +732,6 @@ function Field({
     <div>
       <label className="block text-sm font-medium mb-1.5" style={{ color: LABEL }}>{label}</label>
       <input
-        name={name}
         type={type}
         value={value}
         onChange={e => onChange(e.target.value)}
