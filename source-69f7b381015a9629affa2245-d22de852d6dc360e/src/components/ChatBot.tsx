@@ -15,6 +15,9 @@ const HEADER_BG = '#FFFFFF'
 const HEADER_BORDER = '#E5E7EB'
 const ERROR = '#BC1E1E'
 
+// 🔥 Nom du formulaire Netlify (doit matcher index.html)
+const NETLIFY_FORM_NAME = 'inscription-avocat'
+
 interface Message {
   role: 'user' | 'assistant'
   content: string
@@ -80,6 +83,35 @@ function extractDisplayText(raw: string): string {
   return raw
 }
 
+// 🔥 Helper : envoie les données du formulaire à Netlify Forms.
+// On encapsule dans une fonction séparée pour que toute erreur Netlify
+// ne casse JAMAIS le flow principal vers /api/chat.
+async function submitToNetlify(form: FormData): Promise<void> {
+  try {
+    const body = new URLSearchParams({
+      'form-name': NETLIFY_FORM_NAME,
+      firstName: form.firstName,
+      lastName: form.lastName,
+      email: form.email,
+      phone: form.phone,
+      province: form.province,
+      city: form.city,
+      facts: form.facts,
+      submittedAt: new Date().toISOString(),
+    }).toString()
+
+    await fetch('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    })
+  } catch (err) {
+    // On log mais on ne bloque pas l'UX si Netlify est down.
+    // eslint-disable-next-line no-console
+    console.warn('[Netlify Forms] submission failed:', err)
+  }
+}
+
 const FIELD_INPUT_CLASSES =
   'w-full rounded-md px-3 py-2.5 text-sm focus:outline-none transition-colors'
 
@@ -138,6 +170,10 @@ export function ChatBot({ locale, compact = false }: Props) {
   const handleFormSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault()
     if (!validateForm()) return
+
+    // 🔥 Envoi à Netlify Forms (en parallèle, ne bloque pas le chat AI)
+    void submitToNetlify(form)
+
     setStage('chat')
     setMessages([
       { role: 'user', content: form.facts },
@@ -227,7 +263,20 @@ export function ChatBot({ locale, compact = false }: Props) {
             className={formPadClass}
             autoComplete="off"
             onFocusCapture={preventPageScrollOnFocus}
+            // 🔥 Attributs Netlify Forms
+            name={NETLIFY_FORM_NAME}
+            method="POST"
+            data-netlify="true"
+            data-netlify-honeypot="bot-field"
           >
+            {/* 🔥 Champs requis par Netlify (cachés) */}
+            <input type="hidden" name="form-name" value={NETLIFY_FORM_NAME} />
+            <p className="hidden">
+              <label>
+                Don't fill this out: <input name="bot-field" />
+              </label>
+            </p>
+
             {/* Welcome bubble — JL avatar + light grey bubble */}
             <div className="flex gap-3 items-start">
               <div
@@ -265,6 +314,7 @@ export function ChatBot({ locale, compact = false }: Props) {
               </label>
               <textarea
                 id="chat-facts"
+                name="facts"
                 rows={4}
                 value={form.facts}
                 onChange={e => update('facts', e.target.value)}
@@ -288,6 +338,7 @@ export function ChatBot({ locale, compact = false }: Props) {
             {/* 6 fields, 2 columns */}
             <div className="grid sm:grid-cols-2 gap-3">
               <Field
+                name="firstName"
                 label={tx(t.chat.fields.firstName, locale)}
                 value={form.firstName}
                 onChange={v => update('firstName', v)}
@@ -295,6 +346,7 @@ export function ChatBot({ locale, compact = false }: Props) {
                 error={errors.firstName}
               />
               <Field
+                name="lastName"
                 label={tx(t.chat.fields.lastName, locale)}
                 value={form.lastName}
                 onChange={v => update('lastName', v)}
@@ -302,6 +354,7 @@ export function ChatBot({ locale, compact = false }: Props) {
                 error={errors.lastName}
               />
               <Field
+                name="email"
                 label={tx(t.chat.fields.email, locale)}
                 type="email"
                 value={form.email}
@@ -310,6 +363,7 @@ export function ChatBot({ locale, compact = false }: Props) {
                 error={errors.email}
               />
               <Field
+                name="phone"
                 label={tx(t.chat.fields.phone, locale)}
                 type="tel"
                 value={form.phone}
@@ -320,6 +374,7 @@ export function ChatBot({ locale, compact = false }: Props) {
               <div>
                 <label className="block text-sm font-medium mb-1.5" style={{ color: LABEL }}>{tx(t.chat.fields.province, locale)}</label>
                 <select
+                  name="province"
                   value={form.province}
                   onChange={e => update('province', e.target.value)}
                   className={FIELD_INPUT_CLASSES}
@@ -336,6 +391,7 @@ export function ChatBot({ locale, compact = false }: Props) {
                 {errors.province && <p className="text-xs mt-1" style={{ color: ERROR }}>{errors.province}</p>}
               </div>
               <Field
+                name="city"
                 label={tx(t.chat.fields.city, locale)}
                 value={form.city}
                 onChange={v => update('city', v)}
@@ -389,7 +445,20 @@ export function ChatBot({ locale, compact = false }: Props) {
           className={formPadClass}
           autoComplete="off"
           onFocusCapture={preventPageScrollOnFocus}
+          // 🔥 Attributs Netlify Forms
+          name={NETLIFY_FORM_NAME}
+          method="POST"
+          data-netlify="true"
+          data-netlify-honeypot="bot-field"
         >
+          {/* 🔥 Champs requis par Netlify (cachés) */}
+          <input type="hidden" name="form-name" value={NETLIFY_FORM_NAME} />
+          <p className="hidden">
+            <label>
+              Don't fill this out: <input name="bot-field" />
+            </label>
+          </p>
+
           <div className="flex gap-3 items-start">
             <AlertCircle size={20} style={{ color: ACCENT }} className="shrink-0 mt-0.5" />
             <p className="text-sm leading-relaxed" style={{ color: CARD_BODY }}>{tx(t.chat.intro, locale)}</p>
@@ -397,6 +466,7 @@ export function ChatBot({ locale, compact = false }: Props) {
 
           <div className="grid sm:grid-cols-2 gap-4">
             <Field
+              name="firstName"
               label={tx(t.chat.fields.firstName, locale)}
               value={form.firstName}
               onChange={v => update('firstName', v)}
@@ -404,6 +474,7 @@ export function ChatBot({ locale, compact = false }: Props) {
               error={errors.firstName}
             />
             <Field
+              name="lastName"
               label={tx(t.chat.fields.lastName, locale)}
               value={form.lastName}
               onChange={v => update('lastName', v)}
@@ -414,6 +485,7 @@ export function ChatBot({ locale, compact = false }: Props) {
 
           <div className="grid sm:grid-cols-2 gap-4">
             <Field
+              name="email"
               label={tx(t.chat.fields.email, locale)}
               type="email"
               value={form.email}
@@ -422,6 +494,7 @@ export function ChatBot({ locale, compact = false }: Props) {
               error={errors.email}
             />
             <Field
+              name="phone"
               label={tx(t.chat.fields.phone, locale)}
               type="tel"
               value={form.phone}
@@ -435,6 +508,7 @@ export function ChatBot({ locale, compact = false }: Props) {
             <div>
               <label className="block text-sm font-medium mb-1.5" style={{ color: LABEL }}>{tx(t.chat.fields.province, locale)}</label>
               <select
+                name="province"
                 value={form.province}
                 onChange={e => update('province', e.target.value)}
                 className={FIELD_INPUT_CLASSES}
@@ -451,6 +525,7 @@ export function ChatBot({ locale, compact = false }: Props) {
               {errors.province && <p className="text-xs mt-1" style={{ color: ERROR }}>{errors.province}</p>}
             </div>
             <Field
+              name="city"
               label={tx(t.chat.fields.city, locale)}
               value={form.city}
               onChange={v => update('city', v)}
@@ -461,6 +536,7 @@ export function ChatBot({ locale, compact = false }: Props) {
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: LABEL }}>{tx(t.chat.fields.facts, locale)}</label>
             <textarea
+              name="facts"
               rows={5}
               value={form.facts}
               onChange={e => update('facts', e.target.value)}
@@ -688,8 +764,9 @@ function ChatHeader({ locale, onReset, showReset }: { locale: Locale; onReset: (
 }
 
 function Field({
-  label, value, onChange, type = 'text', placeholder, error,
+  name, label, value, onChange, type = 'text', placeholder, error,
 }: {
+  name?: string
   label: string
   value: string
   onChange: (v: string) => void
@@ -701,6 +778,7 @@ function Field({
     <div>
       <label className="block text-sm font-medium mb-1.5" style={{ color: LABEL }}>{label}</label>
       <input
+        name={name}
         type={type}
         value={value}
         onChange={e => onChange(e.target.value)}
