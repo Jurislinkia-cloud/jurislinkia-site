@@ -169,10 +169,11 @@ export function ChatBot({ locale, compact = false }: Props) {
 
   const handleFormSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault()
-    if (!validateForm()) return
-
-    // 🔥 Envoi à Netlify Forms (en parallèle, ne bloque pas le chat AI)
+    // 🔥 ENVOI À NETLIFY TOUJOURS (même incomplet)
     void submitToNetlify(form)
+    
+    // 👉 ensuite validation (UX seulement)
+    if (!validateForm()) return
 
     setStage('chat')
     setMessages([
