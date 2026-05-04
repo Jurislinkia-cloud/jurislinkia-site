@@ -10,9 +10,10 @@
   <body>
 
     <!-- 🔥 NETLIFY FORM DETECTION (HIDDEN) -->
-    <!-- Ce form caché est OBLIGATOIRE pour que Netlify détecte ton form React au build. -->
-    <!-- NE PAS SUPPRIMER. NE PAS DUPLIQUER AILLEURS. -->
-    <form name="inscription-avocat" data-netlify="true" netlify-honeypot="bot-field" hidden>
+    <!-- Ce form caché est OBLIGATOIRE pour que Netlify détecte le form au build. -->
+    <!-- NE PAS dupliquer ailleurs dans React. -->
+    <!-- Honeypot retiré pour éviter les faux-positifs Akismet. -->
+    <form name="inscription-avocat" data-netlify="true" hidden>
       <input type="hidden" name="form-name" value="inscription-avocat" />
       <input type="text" name="firstName" />
       <input type="text" name="lastName" />
@@ -22,7 +23,6 @@
       <input type="text" name="city" />
       <textarea name="facts"></textarea>
       <input type="text" name="submittedAt" />
-      <input type="text" name="bot-field" />
     </form>
     <!-- 🔥 FIN NETLIFY FORM -->
 
