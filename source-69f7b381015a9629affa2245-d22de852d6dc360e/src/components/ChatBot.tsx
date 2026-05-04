@@ -15,8 +15,9 @@ const HEADER_BG = '#FFFFFF'
 const HEADER_BORDER = '#E5E7EB'
 const ERROR = '#BC1E1E'
 
-// Nom du formulaire Netlify (doit matcher index.html)
-const NETLIFY_FORM_NAME = 'inscription-avocat'
+// 🔥 FORMSPREE — Endpoint de réception des leads.
+// Tu reçois un email immédiat à chaque soumission validée.
+const FORMSPREE_URL = 'https://formspree.io/f/xkoyjdow'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -83,37 +84,43 @@ function extractDisplayText(raw: string): string {
   return raw
 }
 
-// Envoi à Netlify Forms.
-// URL = '/' (PAS '/?form=1' qui ne fonctionne pas).
-// Méthode officielle Netlify : POST x-www-form-urlencoded à la racine.
-async function submitToNetlify(form: FormData): Promise<void> {
+// 🔥 Envoi du lead à Formspree.
+// Encapsulé dans try/catch — toute erreur Formspree ne bloque JAMAIS le flow chat AI.
+async function submitToFormspree(form: FormData, locale: Locale): Promise<void> {
   try {
-    const formData = new URLSearchParams()
-    formData.append('form-name', NETLIFY_FORM_NAME)
-    formData.append('firstName', form.firstName)
-    formData.append('lastName', form.lastName)
-    formData.append('email', form.email)
-    formData.append('phone', form.phone)
-    formData.append('province', form.province)
-    formData.append('city', form.city)
-    formData.append('facts', form.facts)
-    formData.append('submittedAt', new Date().toISOString())
-
-    const response = await fetch('/', {
+    const response = await fetch(FORMSPREE_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
-      body: formData.toString(),
+      body: JSON.stringify({
+        // Champs principaux
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone,
+        province: form.province,
+        city: form.city,
+        facts: form.facts,
+        // Métadonnées
+        submittedAt: new Date().toISOString(),
+        locale: locale,
+        // Sujet de l'email envoyé par Formspree
+        _subject: `🔔 Nouveau lead JurisLinkia — ${form.firstName} ${form.lastName} (${form.province})`,
+        // Reply-to : tu peux répondre directement au lead depuis Gmail
+        _replyto: form.email,
+      }),
     })
 
-    if (!response.ok) {
-      console.warn('[Netlify Forms] non-OK status:', response.status)
+    if (response.ok) {
+      console.log('[Formspree] Lead envoyé avec succès')
     } else {
-      console.log('[Netlify Forms] submission sent successfully')
+      const errorData = await response.json().catch(() => ({}))
+      console.warn('[Formspree] Erreur status:', response.status, errorData)
     }
   } catch (err) {
-    console.warn('[Netlify Forms] submission failed:', err)
+    console.warn('[Formspree] Échec envoi:', err)
   }
 }
 
@@ -173,8 +180,8 @@ export function ChatBot({ locale, compact = false }: Props) {
     // 1. Validation FIRST
     if (!validateForm()) return
 
-    // 2. Envoi à Netlify (en parallèle)
-    void submitToNetlify(form)
+    // 2. Envoi à Formspree (en parallèle, ne bloque pas)
+    void submitToFormspree(form, locale)
 
     // 3. Continue vers le chat AI
     setStage('chat')
