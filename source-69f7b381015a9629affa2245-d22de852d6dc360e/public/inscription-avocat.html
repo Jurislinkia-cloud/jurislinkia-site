@@ -1,21 +1,32 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JurisLinkia — Avocat d'affaires Québec et Ontario</title>
+    <meta name="description" content="Trouvez un avocat d'affaires membre du Barreau du Québec ou du Barreau de l'Ontario en 2 minutes." />
+  </head>
   <body>
-    <!-- Fichier statique pour l'enregistrement du formulaire Netlify Forms / Static file for Netlify Forms registration. -->
-    <!-- Ce fichier n'est jamais affiché aux utilisateurs / This file is never displayed to users. -->
-    <form name="inscription-avocat" netlify netlify-honeypot="bot-field" hidden>
-      <input type="text" name="locale" />
-      <input type="text" name="prenom" />
-      <input type="text" name="nom" />
-      <input type="text" name="cabinet" />
-      <input type="text" name="ville" />
+
+    <!-- 🔥 NETLIFY FORM DETECTION (HIDDEN) -->
+    <!-- Ce form caché est OBLIGATOIRE pour que Netlify détecte ton form React au build. -->
+    <!-- NE PAS SUPPRIMER. NE PAS DUPLIQUER AILLEURS. -->
+    <form name="inscription-avocat" data-netlify="true" netlify-honeypot="bot-field" hidden>
+      <input type="hidden" name="form-name" value="inscription-avocat" />
+      <input type="text" name="firstName" />
+      <input type="text" name="lastName" />
+      <input type="email" name="email" />
+      <input type="tel" name="phone" />
       <input type="text" name="province" />
-      <input type="tel" name="telephone" />
-      <input type="email" name="courriel" />
-      <input type="text" name="experience" />
-      <input type="text" name="barreau" />
-      <input type="text" name="domaines" />
-      <textarea name="message"></textarea>
+      <input type="text" name="city" />
+      <textarea name="facts"></textarea>
+      <input type="text" name="submittedAt" />
+      <input type="text" name="bot-field" />
     </form>
+    <!-- 🔥 FIN NETLIFY FORM -->
+
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
