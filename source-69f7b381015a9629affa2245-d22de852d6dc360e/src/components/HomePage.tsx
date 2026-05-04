@@ -60,42 +60,11 @@ export function HomePage({ locale }: { locale: Locale }) {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: WHITE, color: TEXT_BODY }}>
-      <form
-  name="inscription-avocat"
-  method="POST"
-  data-netlify="true"
-  style={{ display: 'none' }}
->
-  <input type="hidden" name="form-name" value="inscription-avocat" />
-  <input type="text" name="firstName" />
-  <input type="text" name="lastName" />
-  <input type="email" name="email" />
-  <input type="text" name="phone" />
-  <input type="text" name="province" />
-  <input type="text" name="city" />
-  <textarea name="facts" />
-</form>
-      
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(LEGAL_SERVICE_JSONLD) }}
       />
       <Header />
-      <form
-  name="inscription-avocat"
-  method="POST"
-  data-netlify="true"
-  style={{ display: 'none' }}
->
-  <input type="hidden" name="form-name" value="inscription-avocat" />
-  <input name="firstName" />
-  <input name="lastName" />
-  <input name="email" />
-  <input name="phone" />
-  <input name="province" />
-  <input name="city" />
-  <textarea name="facts"></textarea>
-</form>
 
       {/* HERO — editorial with embedded chatbot */}
       <section id="assistant" style={{ backgroundColor: WHITE }}>
