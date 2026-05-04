@@ -68,9 +68,58 @@ export function HomePage({ locale }: { locale: Locale }) {
 
       {/* HERO — editorial with embedded chatbot */}
       <section id="assistant" style={{ backgroundColor: WHITE }}>
-        <div className="max-w-[1280px] mx-auto px-6 md:px-16 py-12 md:py-20 grid md:grid-cols-12 gap-10 md:gap-12 items-start">
-          {/* Left column — editorial copy + B&W skyline */}
-          <div className="md:col-span-6 lg:col-span-6 order-2 md:order-1">
+        <div className="max-w-[1280px] mx-auto px-6 md:px-16 pt-4 md:pt-20 pb-12 md:pb-20 grid md:grid-cols-12 gap-6 md:gap-12 items-start">
+
+          {/* MOBILE-ONLY MINI-CONTEXT — appears above chatbot on mobile, hidden on desktop */}
+          <div className="md:hidden order-1 col-span-12">
+            <p
+              style={{
+                color: ACCENT,
+                fontSize: '11px',
+                fontWeight: 600,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                fontFamily: 'Inter, sans-serif',
+                marginBottom: '8px',
+              }}
+            >
+              {tx(t.hero.eyebrow, locale)}
+            </p>
+            <h1
+              style={{
+                fontFamily: SERIF,
+                fontWeight: 500,
+                color: BLACK,
+                fontSize: '26px',
+                lineHeight: 1.2,
+                letterSpacing: '-0.01em',
+                marginBottom: '8px',
+              }}
+            >
+              {tx(t.hero.titleLine1, locale)}{' '}
+              <em style={{ fontStyle: 'italic', fontWeight: 500, color: BLACK }}>
+                {tx(t.hero.titleLine2Highlight, locale)}
+              </em>
+              {tx(t.hero.titleLine3, locale)}
+            </h1>
+            <p
+              style={{
+                color: '#4B5563',
+                fontSize: '14px',
+                lineHeight: 1.5,
+                fontWeight: 400,
+                fontFamily: 'Inter, sans-serif',
+                marginBottom: '16px',
+              }}
+            >
+              {locale === 'fr'
+                ? 'Décrivez votre situation, recevez le bon avocat.'
+                : 'Describe your situation, get the right lawyer.'}
+            </p>
+          </div>
+
+          {/* Left column — DESKTOP-ONLY editorial copy + B&W skyline */}
+          <div className="hidden md:block md:col-span-6 lg:col-span-6 md:order-1">
             <p
               className="mb-6"
               style={{
@@ -116,7 +165,7 @@ export function HomePage({ locale }: { locale: Locale }) {
               <p>{tx(t.hero.subtitleLine3, locale)}</p>
             </div>
             <div
-              className="hidden md:block w-full overflow-hidden"
+              className="w-full overflow-hidden"
               style={{ borderRadius: '8px', height: '300px' }}
             >
               <img
@@ -130,9 +179,10 @@ export function HomePage({ locale }: { locale: Locale }) {
           </div>
 
           {/* Right column — chatbot, visible immediately */}
-          <div className="md:col-span-6 lg:col-span-6 order-1 md:order-2">
+          <div className="md:col-span-6 lg:col-span-6 order-2 md:order-2 col-span-12">
             <ChatBot locale={locale} compact />
           </div>
+
         </div>
       </section>
 
@@ -346,60 +396,6 @@ export function HomePage({ locale }: { locale: Locale }) {
           </p>
         </div>
       </section>
-
-<section id="assistant" style={{ backgroundColor: WHITE }}>
-  <div className="max-w-[1280px] mx-auto px-4 md:px-16 py-6 md:py-20 grid md:grid-cols-12 gap-6 md:gap-12 items-start">
-
-    {/* TEXTE */}
-    <div className="md:col-span-6 order-1">
-      <p
-        className="mb-3"
-        style={{
-          color: ACCENT,
-          fontSize: '11px',
-          fontWeight: 600,
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
-        }}
-      >
-        {tx(t.hero.eyebrow, locale)}
-      </p>
-
-      <h1
-        className="mb-3"
-        style={{
-          fontFamily: SERIF,
-          fontWeight: 500,
-          color: BLACK,
-          fontSize: 'clamp(22px, 4.5vw, 42px)',
-          lineHeight: 1.1,
-        }}
-      >
-        {tx(t.hero.titleLine1, locale)}{' '}
-        <em style={{ fontStyle: 'italic' }}>
-          {tx(t.hero.titleLine2Highlight, locale)}
-        </em>
-        {tx(t.hero.titleLine3, locale)}
-      </h1>
-
-      <p
-        style={{
-          color: TEXT_BODY,
-          fontSize: '14px',
-          lineHeight: 1.5,
-        }}
-      >
-        {tx(t.hero.subtitleLine1, locale)}
-      </p>
-    </div>
-
-    {/* CHAT */}
-    <div className="md:col-span-6 order-2">
-      <ChatBot locale={locale} compact />
-    </div>
-
-  </div>
-</section>
 
       <Footer />
     </div>
