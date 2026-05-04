@@ -81,6 +81,21 @@ export function HomePage({ locale }: { locale: Locale }) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(LEGAL_SERVICE_JSONLD) }}
       />
       <Header />
+      <form
+  name="inscription-avocat"
+  method="POST"
+  data-netlify="true"
+  style={{ display: 'none' }}
+>
+  <input type="hidden" name="form-name" value="inscription-avocat" />
+  <input name="firstName" />
+  <input name="lastName" />
+  <input name="email" />
+  <input name="phone" />
+  <input name="province" />
+  <input name="city" />
+  <textarea name="facts"></textarea>
+</form>
 
       {/* HERO — editorial with embedded chatbot */}
       <section id="assistant" style={{ backgroundColor: WHITE }}>
