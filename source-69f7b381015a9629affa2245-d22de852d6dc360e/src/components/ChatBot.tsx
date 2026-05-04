@@ -88,26 +88,26 @@ function extractDisplayText(raw: string): string {
 // ne casse JAMAIS le flow principal vers /api/chat.
 async function submitToNetlify(form: FormData): Promise<void> {
   try {
-    const body = new URLSearchParams({
-      'form-name': NETLIFY_FORM_NAME,
-      firstName: form.firstName,
-      lastName: form.lastName,
-      email: form.email,
-      phone: form.phone,
-      province: form.province,
-      city: form.city,
-      facts: form.facts,
-      submittedAt: new Date().toISOString(),
-    }).toString()
+    const formData = new URLSearchParams()
+    formData.append('form-name', NETLIFY_FORM_NAME)
+    formData.append('firstName', form.firstName || '')
+    formData.append('lastName', form.lastName || '')
+    formData.append('email', form.email || '')
+    formData.append('phone', form.phone || '')
+    formData.append('province', form.province || '')
+    formData.append('city', form.city || '')
+    formData.append('facts', form.facts || '')
+    formData.append('submittedAt', new Date().toISOString())
 
-    await fetch('/', {
+    await fetch('/?form=1', {   // 🔥 IMPORTANT
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData.toString(),
     })
+
   } catch (err) {
-    // On log mais on ne bloque pas l'UX si Netlify est down.
-    // eslint-disable-next-line no-console
     console.warn('[Netlify Forms] submission failed:', err)
   }
 }
