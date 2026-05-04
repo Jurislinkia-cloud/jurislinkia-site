@@ -347,36 +347,59 @@ export function HomePage({ locale }: { locale: Locale }) {
         </div>
       </section>
 
-      {/* LAWYERS CTA — black section */}
-      <section style={{ backgroundColor: BLACK }}>
-        <div className="max-w-[1280px] mx-auto px-6 md:px-16 py-20 md:py-24">
-          <div className="grid md:grid-cols-2 gap-10 items-center">
-            <div>
-              <h2
-                className="mb-4"
-                style={{
-                  fontFamily: SERIF,
-                  fontWeight: 500,
-                  color: WHITE,
-                  fontSize: 'clamp(1.85rem, 3.5vw, 2.75rem)',
-                  lineHeight: 1.15,
-                  letterSpacing: '-0.01em',
-                }}
-              >
-                {tx(t.lawyersCta.title, locale)}
-              </h2>
-              <p style={{ color: '#C7CAD1', fontSize: '1.05rem', lineHeight: 1.6 }}>
-                {tx(t.lawyersCta.subtitle, locale)}
-              </p>
-            </div>
-            <div className="md:text-right">
-              <a href={portalPath} className="btn-primary-light">
-                {tx(t.lawyersCta.button, locale)} <ArrowRight size={15} />
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
+<section id="assistant" style={{ backgroundColor: WHITE }}>
+  <div className="max-w-[1280px] mx-auto px-4 md:px-16 py-6 md:py-20 grid md:grid-cols-12 gap-6 md:gap-12 items-start">
+
+    {/* TEXTE */}
+    <div className="md:col-span-6 order-1">
+      <p
+        className="mb-3"
+        style={{
+          color: ACCENT,
+          fontSize: '11px',
+          fontWeight: 600,
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+        }}
+      >
+        {tx(t.hero.eyebrow, locale)}
+      </p>
+
+      <h1
+        className="mb-3"
+        style={{
+          fontFamily: SERIF,
+          fontWeight: 500,
+          color: BLACK,
+          fontSize: 'clamp(22px, 4.5vw, 42px)',
+          lineHeight: 1.1,
+        }}
+      >
+        {tx(t.hero.titleLine1, locale)}{' '}
+        <em style={{ fontStyle: 'italic' }}>
+          {tx(t.hero.titleLine2Highlight, locale)}
+        </em>
+        {tx(t.hero.titleLine3, locale)}
+      </h1>
+
+      <p
+        style={{
+          color: TEXT_BODY,
+          fontSize: '14px',
+          lineHeight: 1.5,
+        }}
+      >
+        {tx(t.hero.subtitleLine1, locale)}
+      </p>
+    </div>
+
+    {/* CHAT */}
+    <div className="md:col-span-6 order-2">
+      <ChatBot locale={locale} compact />
+    </div>
+
+  </div>
+</section>
 
       <Footer />
     </div>
