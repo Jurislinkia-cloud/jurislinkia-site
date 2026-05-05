@@ -1,266 +1,201 @@
-import { useEffect, useState } from 'react'
-import {
-  createFileRoute,
-  Outlet,
-  useNavigate,
-  useLocation,
-} from '@tanstack/react-router'
-import { Sidebar, type SidebarSection } from '@/components/saas/Sidebar'
-import { Topbar } from '@/components/saas/Topbar'
-import { SupportCard } from '@/components/saas/SupportCard'
-import { getSupabase, getCurrentUserRole } from '@/lib/supabase'
-import { tSaas } from '@/lib/saas-i18n'
+import { cn } from '@/lib/saas-utils'
 import type { Locale } from '@/lib/i18n'
 
-export const Route = createFileRoute('/portail')({
-  component: PortailLayout,
-})
+interface SupportCardProps {
+  locale?: Locale
+  phone?: string
+  email?: string
+  variant?: 'sidebar' | 'block'
+  className?: string
+}
 
-type AuthState =
-  | { status: 'loading' }
-  | { status: 'unauthenticated' }
-  | { status: 'wrong_role' }
-  | { status: 'authenticated'; userName: string; userEmail: string }
+const labels = {
+  fr: {
+    title: 'Besoin d\'aide ?',
+    description: 'Notre équipe est là pour vous accompagner.',
+    callUs: 'Appelez-nous',
+    writeUs: 'Écrire à l\'équipe',
+  },
+  en: {
+    title: 'Need help?',
+    description: 'Our team is here to support you.',
+    callUs: 'Call us',
+    writeUs: 'Write to the team',
+  },
+} as const
 
 /**
- * Layout commun à toutes les pages du portail avocat (FR).
+ * Carte de support avec téléphone et email.
+ * Deux variantes : "sidebar" (compacte) ou "block" (pleine largeur).
  */
-function PortailLayout() {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const locale: Locale = 'fr'
-  const t = tSaas(locale)
+export function SupportCard({
+  locale = 'fr',
+  phone = '(514) 900-0645',
+  email = 'contact@jurislinkia.com',
+  variant = 'sidebar',
+  className,
+}: SupportCardProps) {
+  const l = labels[locale]
+  const phoneHref = 'tel:' + phone.replace(/[^\d+]/g, '')
+  const emailHref = 'mailto:' + email
 
-  const [authState, setAuthState] = useState<AuthState>({ status: 'loading' })
-
-  useEffect(() => {
-    let cancelled = false
-
-    async function checkAuth() {
-      try {
-        const supabase = getSupabase()
-        const userResult = await supabase.auth.getUser()
-        const user = userResult.data?.user
-
-        if (cancelled) return
-
-        if (!user) {
-          setAuthState({ status: 'unauthenticated' })
-          return
-        }
-
-        const role = await getCurrentUserRole()
-        if (cancelled) return
-
-        if (role === 'admin') {
-          setAuthState({ status: 'wrong_role' })
-          return
-        }
-
-        let fullName = user.email ?? 'Maître'
-        try {
-          const lawyerResult = await supabase
-            .from('lawyers')
-            .select('first_name, last_name, email')
-            .eq('id', user.id)
-            .maybeSingle()
-
-          const lawyer = lawyerResult.data as
-            | { first_name: string | null; last_name: string | null; email: string | null }
-            | null
-
-          if (lawyer) {
-            const composed = `${lawyer.first_name ?? ''} ${lawyer.last_name ?? ''}`.trim()
-            if (composed) fullName = composed
-          }
-        } catch {
-          // Ignore : on garde l'email comme fallback
-        }
-
-        if (cancelled) return
-
-        setAuthState({
-          status: 'authenticated',
-          userName: fullName,
-          userEmail: user.email ?? '',
-        })
-      } catch (err) {
-        console.error('[PortailLayout] Auth check failed:', err)
-        if (!cancelled) setAuthState({ status: 'unauthenticated' })
-      }
-    }
-
-    checkAuth()
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  useEffect(() => {
-    if (authState.status === 'unauthenticated') {
-      navigate({ to: '/portail-avocats' })
-    } else if (authState.status === 'wrong_role') {
-      navigate({ to: '/admin' })
-    }
-  }, [authState.status, navigate])
-
-  async function handleSignOut() {
-    const supabase = getSupabase()
-    await supabase.auth.signOut()
-    navigate({ to: '/portail-avocats' })
-  }
-
-  if (authState.status === 'loading') {
+  if (variant === 'sidebar') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
+      <div
+        className={cn(
+          'rounded-sm bg-[#FAFAFA] border border-[#E5E7EB] p-4',
+          className
+        )}
+      >
         <p
-          className="text-sm text-[#6B7280]"
+          className="text-xs font-medium text-[#0A0A0A] m-0 mb-1"
+          style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '0.02em' }}
+        >
+          {l.title}
+        </p>
+        <p
+          className="text-xs text-[#6B7280] m-0 mb-3 leading-snug"
           style={{ fontFamily: 'Inter, sans-serif' }}
         >
-          {t.common.loading}
+          {l.description}
         </p>
+
+        
+          href={phoneHref}
+          className="flex items-center gap-2 text-xs text-[#0A0A0A] no-underline mb-1.5 hover:text-[#BC1E1E] transition-colors"
+          style={{ fontFamily: 'Inter, sans-serif' }}
+        >
+          <PhoneIcon />
+          <span className="font-medium">{phone}</span>
+        </a>
+
+        
+          href={emailHref}
+          className="flex items-center gap-2 text-xs text-[#6B7280] no-underline hover:text-[#BC1E1E] transition-colors"
+          style={{ fontFamily: 'Inter, sans-serif' }}
+        >
+          <MailIcon />
+          <span>{l.writeUs}</span>
+        </a>
       </div>
     )
   }
 
-  if (
-    authState.status === 'unauthenticated' ||
-    authState.status === 'wrong_role'
-  ) {
-    return null
-  }
-
-  const sidebarSections: SidebarSection[] = [
-    {
-      items: [
-        {
-          label: t.portal.nav.dashboard,
-          href: '/portail',
-          icon: <NavIcon path="M3 12l9-9 9 9M5 10v10h4v-6h6v6h4V10" />,
-        },
-        {
-          label: t.portal.nav.newLeads,
-          href: '/portail/dossiers',
-          icon: <NavIcon path="M22 12h-6l-2 3h-4l-2-3H2 M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z" />,
-        },
-        {
-          label: t.portal.nav.conversations,
-          href: '/portail/conversations',
-          icon: <NavIcon path="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />,
-        },
-        {
-          label: t.portal.nav.consultations,
-          href: '/portail/consultations',
-          icon: <NavIcon path="M19 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zM16 2v4M8 2v4M3 10h18" />,
-        },
-      ],
-    },
-    {
-      title: 'Mon compte',
-      items: [
-        {
-          label: t.portal.nav.profile,
-          href: '/portail/profil',
-          icon: <NavIcon path="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2 M12 7a4 4 0 100 8 4 4 0 000-8z" />,
-        },
-        {
-          label: t.portal.nav.availability,
-          href: '/portail/disponibilites',
-          icon: <NavIcon path="M12 8v4l3 3 M12 22a10 10 0 100-20 10 10 0 000 20z" />,
-        },
-        {
-          label: t.portal.nav.credits,
-          href: '/portail/credits',
-          icon: <NavIcon path="M21 4H3a2 2 0 00-2 2v12a2 2 0 002 2h18a2 2 0 002-2V6a2 2 0 00-2-2zM1 10h22" />,
-        },
-        {
-          label: t.portal.nav.bankAccount,
-          href: '/portail/compte-bancaire',
-          icon: <NavIcon path="M3 21h18 M3 10h18 M5 6l7-3 7 3 M4 10v11 M20 10v11 M8 14v3 M12 14v3 M16 14v3" />,
-        },
-        {
-          label: t.portal.nav.history,
-          href: '/portail/historique',
-          icon: <NavIcon path="M3 3v5h5 M3.05 13a9 9 0 102.4-7.27L3 8 M12 7v5l4 2" />,
-        },
-      ],
-    },
-  ]
-
-  const breadcrumbs = computeBreadcrumbs(location.pathname, t)
-
   return (
-    <div className="min-h-screen flex bg-[#F5F5F5]">
-      <Sidebar
-        sections={sidebarSections}
-        user={{
-          name: authState.userName,
-          email: authState.userEmail,
-          role: 'Avocat',
+    <div
+      className={cn(
+        'rounded-sm bg-white border border-[#E5E7EB] p-6',
+        className
+      )}
+    >
+      <h3
+        className="font-serif text-[#0A0A0A] m-0 mb-2"
+        style={{
+          fontFamily: 'Playfair Display, serif',
+          fontWeight: 500,
+          fontSize: '1.25rem',
+          letterSpacing: '-0.01em',
         }}
-        onSignOut={handleSignOut}
-        locale={locale}
-        brandLabel="JURISLINKIA"
-        brandHref="/portail"
-        footerSlot={<SupportCard locale={locale} variant="sidebar" />}
-      />
+      >
+        {l.title}
+      </h3>
+      <p
+        className="text-sm text-[#6B7280] m-0 mb-5"
+        style={{ fontFamily: 'Inter, sans-serif', lineHeight: 1.6 }}
+      >
+        {l.description}
+      </p>
 
-      <div className="flex-1 min-w-0 flex flex-col">
-        <Topbar
-          breadcrumbs={breadcrumbs}
-          locale={locale}
-          alternateLocaleHref="/en/portal"
-        />
+      <div className="space-y-3">
+        <div className="flex items-start gap-3">
+          <span className="shrink-0 mt-0.5 text-[#BC1E1E]">
+            <PhoneIcon size={18} />
+          </span>
+          <div className="min-w-0">
+            <p
+              className="text-xs uppercase tracking-wider text-[#9CA3AF] m-0 mb-0.5"
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 600,
+                letterSpacing: '0.18em',
+                fontSize: '11px',
+              }}
+            >
+              {l.callUs}
+            </p>
+            
+              href={phoneHref}
+              className="text-sm text-[#0A0A0A] no-underline font-medium hover:text-[#BC1E1E] transition-colors"
+              style={{ fontFamily: 'Inter, sans-serif' }}
+            >
+              {phone}
+            </a>
+          </div>
+        </div>
 
-        <main className="flex-1 p-6 overflow-y-auto">
-          <Outlet />
-        </main>
+        <div className="flex items-start gap-3">
+          <span className="shrink-0 mt-0.5 text-[#BC1E1E]">
+            <MailIcon size={18} />
+          </span>
+          <div className="min-w-0">
+            <p
+              className="text-xs uppercase tracking-wider text-[#9CA3AF] m-0 mb-0.5"
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 600,
+                letterSpacing: '0.18em',
+                fontSize: '11px',
+              }}
+            >
+              Email
+            </p>
+            
+              href={emailHref}
+              className="text-sm text-[#0A0A0A] no-underline font-medium hover:text-[#BC1E1E] transition-colors break-all"
+              style={{ fontFamily: 'Inter, sans-serif' }}
+            >
+              {email}
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   )
 }
 
-function computeBreadcrumbs(
-  pathname: string,
-  t: ReturnType<typeof tSaas>
-): Array<{ label: string; href?: string }> {
-  const portailHome = { label: 'Portail', href: '/portail' }
-
-  if (pathname === '/portail' || pathname === '/portail/') {
-    return [{ label: t.portal.nav.dashboard }]
-  }
-
-  const map: Record<string, string> = {
-    '/portail/dossiers': t.portal.nav.newLeads,
-    '/portail/conversations': t.portal.nav.conversations,
-    '/portail/consultations': t.portal.nav.consultations,
-    '/portail/profil': t.portal.nav.profile,
-    '/portail/disponibilites': t.portal.nav.availability,
-    '/portail/credits': t.portal.nav.credits,
-    '/portail/compte-bancaire': t.portal.nav.bankAccount,
-    '/portail/historique': t.portal.nav.history,
-  }
-
-  const label = map[pathname]
-  if (label) return [portailHome, { label }]
-
-  return [portailHome]
-}
-
-function NavIcon({ path }: { path: string }) {
+function PhoneIcon({ size = 14 }: { size?: number }) {
   return (
     <svg
-      width="18"
-      height="18"
+      width={size}
+      height={size}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.75"
+      strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d={path} />
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+    </svg>
+  )
+}
+
+function MailIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+      <polyline points="22,6 12,13 2,6" />
     </svg>
   )
 }
